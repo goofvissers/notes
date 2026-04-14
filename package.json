@@ -1,6 +1,6 @@
 {
-  "name": "lumen-notes",
-  "version": "1.0.0",
+  "name": "goof-notes",
+  "version": "1.0.1",
   "description": "A modern Windows notes app with title, body, and tagging.",
   "main": "main.js",
   "author": "",
@@ -11,26 +11,31 @@
     "package": "electron-builder --win nsis"
   },
   "build": {
-    "appId": "com.lumennotes.app",
-    "productName": "Lumen Notes",
+    "appId": "com.goofnotes.app",
+    "productName": "Goof Notes",
     "files": [
       "main.js",
       "preload.js",
       "index.html",
       "styles.css",
       "app.js",
-      "package.json"
+      "package.json",
+      "assets/**/*"
     ],
     "directories": {
       "buildResources": "assets"
     },
     "win": {
+      "icon": "assets/goof-notes.ico",
       "signAndEditExecutable": false,
       "target": [
         "nsis"
       ]
     },
     "nsis": {
+      "installerIcon": "assets/goof-notes.ico",
+      "uninstallerIcon": "assets/goof-notes.ico",
+      "installerHeaderIcon": "assets/goof-notes.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }

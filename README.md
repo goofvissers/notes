@@ -1,4 +1,4 @@
-# Lumen Notes
+# Goof Notes
 
 A modern Apple-inspired notes app for Windows, now wrapped as a real Electron desktop application.
 

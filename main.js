@@ -9,7 +9,8 @@ function createWindow() {
     minHeight: 720,
     backgroundColor: "#e7eef8",
     autoHideMenuBar: true,
-    title: "Lumen Notes",
+    title: "Goof Notes",
+    icon: path.join(__dirname, "assets", "goof-notes.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

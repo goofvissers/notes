@@ -1,4 +1,4 @@
-const STORAGE_KEY = "lumen-notes-app";
+const STORAGE_KEY = "goof-notes-app";
 
 const notesList = document.getElementById("notes-list");
 const notesCount = document.getElementById("notes-count");
@@ -18,7 +18,7 @@ const tagPillTemplate = document.getElementById("tag-pill-template");
 const defaultNotes = [
   {
     id: crypto.randomUUID(),
-    title: "Product direction",
+    title: "Goof Notes direction",
     body:
       "Keep the interface calm and premium. Notes should feel quick to capture and easy to scan at a glance.",
     tags: ["ux", "priority"],
@@ -49,6 +49,12 @@ function loadNotes() {
 
 function saveNotes() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+}
+
+function applyTagFilter(tag) {
+  state.query = tag;
+  searchInput.value = tag;
+  renderNotesList();
 }
 
 function createNote() {
@@ -169,15 +175,17 @@ function renderNotesList() {
     const item = noteItemTemplate.content.firstElementChild.cloneNode(true);
     item.classList.toggle("active", note.id === state.selectedId);
     item.querySelector(".note-item-title").textContent = note.title || "Untitled note";
-    item.querySelector(".note-item-date").textContent = formatDate(note.updatedAt);
-    item.querySelector(".note-item-preview").textContent =
-      note.body.trim() || "Start writing to preview this note.";
 
     const tagsContainer = item.querySelector(".note-item-tags");
     note.tags.forEach((tag) => {
-      const pill = document.createElement("span");
+      const pill = document.createElement("button");
+      pill.type = "button";
       pill.className = "mini-tag";
       pill.textContent = tag;
+      pill.addEventListener("click", (event) => {
+        event.stopPropagation();
+        applyTagFilter(tag);
+      });
       tagsContainer.append(pill);
     });
 
@@ -211,6 +219,14 @@ function renderEditor() {
   note.tags.forEach((tag) => {
     const pill = tagPillTemplate.content.firstElementChild.cloneNode(true);
     pill.querySelector(".tag-label").textContent = tag;
+    pill.classList.add("filterable");
+    pill.addEventListener("click", (event) => {
+      if (event.target.closest(".tag-remove")) {
+        return;
+      }
+
+      applyTagFilter(tag);
+    });
     pill.querySelector(".tag-remove").addEventListener("click", () => removeTag(tag));
     tagList.append(pill);
   });

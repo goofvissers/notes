@@ -1,0 +1,10 @@
+1.0.1
+[ ] Remove the "Capture ideas with clarity." block and shift the "Current note" bit to the top
+[ ] Remove "Windows Notes"
+[ ] Change the logo to the png I attach, round the coreners a bit
+[ ] Change Lumen notes to "Goof Notes" throughout the app (name of app also)
+[ ] The list of notes at the left should only contain the title of the note, the tag must still be visible
+[ ] When I click a tag in a note, the notes list must be filtered
+
+
+[ ] One small limitation: it’s using the default Electron app icon right now, and the installer is unsigned. If you want, I can do the next polish pass and add a proper app icon, custom titlebar behavior, and a more native-feeling notes data store.
