@@ -7,6 +7,10 @@ const api = {
     save: (notes) => ipcRenderer.invoke("notes:save", notes),
     openDataFolder: () => ipcRenderer.invoke("notes:openDataFolder"),
   },
+  settings: {
+    load: () => ipcRenderer.invoke("settings:load"),
+    save: (settings) => ipcRenderer.invoke("settings:save", settings),
+  },
 };
 
 contextBridge.exposeInMainWorld("goofNotesApp", api);

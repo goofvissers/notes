@@ -1,6 +1,11 @@
 const STORAGE_KEY = "goof-notes-app";
+const MIN_LIBRARY_WIDTH = 280;
+const MAX_LIBRARY_WIDTH = 620;
+const DEFAULT_LIBRARY_WIDTH = 360;
+const PREVIEW_THRESHOLD = 420;
 
 const appShell = document.getElementById("app-shell");
+const browserPane = document.querySelector(".browser-pane");
 const browserTitle = document.getElementById("browser-title");
 const browserCount = document.getElementById("browser-count");
 const notesCount = document.getElementById("notes-count");
@@ -14,7 +19,8 @@ const updatedAt = document.getElementById("updated-at");
 const noteTitle = document.getElementById("note-title");
 const noteBody = document.getElementById("note-body");
 const tagInput = document.getElementById("tag-input");
-const existingTagsList = document.getElementById("existing-tags-list");
+const tagSuggestions = document.getElementById("tag-suggestions");
+const tagSuggestionList = document.getElementById("tag-suggestion-list");
 const tagList = document.getElementById("tag-list");
 const newNoteButton = document.getElementById("new-note-button");
 const deleteNoteButton = document.getElementById("delete-note-button");
@@ -48,9 +54,13 @@ let state = {
   saveMessage: "Saved on this device",
   sortKey: "title",
   sortDirection: "asc",
+  paneWidth: DEFAULT_LIBRARY_WIDTH,
+  tagSuggestions: [],
+  activeSuggestionIndex: -1,
 };
 
 let saveTimer = null;
+let settingsTimer = null;
 let isResizingPane = false;
 
 function loadLegacyNotes() {
@@ -60,6 +70,32 @@ function loadLegacyNotes() {
   } catch {
     return [];
   }
+}
+
+function clampPaneWidth(width) {
+  if (!Number.isFinite(width)) {
+    return DEFAULT_LIBRARY_WIDTH;
+  }
+
+  return Math.max(MIN_LIBRARY_WIDTH, Math.min(MAX_LIBRARY_WIDTH, width));
+}
+
+function setLibraryWidth(width) {
+  const clampedWidth = clampPaneWidth(width);
+  state.paneWidth = clampedWidth;
+  appShell.style.setProperty("--sidebar-width", `${clampedWidth}px`);
+  browserPane.classList.toggle("show-preview", clampedWidth >= PREVIEW_THRESHOLD);
+}
+
+function scheduleSettingsSave() {
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(async () => {
+    try {
+      await window.goofNotesApp?.settings?.save({ paneWidth: state.paneWidth });
+    } catch (error) {
+      console.error("Failed to save UI settings:", error);
+    }
+  }, 180);
 }
 
 async function saveNotes() {
@@ -120,6 +156,95 @@ function getSelectedNote() {
   return state.notes.find((note) => note.id === state.selectedId) ?? null;
 }
 
+function getFilteredNotes() {
+  const query = state.query.trim().toLowerCase();
+  const filteredNotes = !query
+    ? [...state.notes]
+    : state.notes.filter((note) => {
+        const haystack = [note.title, note.body, note.tags.join(" ")].join(" ").toLowerCase();
+        return haystack.includes(query);
+      });
+
+  filteredNotes.sort((left, right) => {
+    const leftValue =
+      state.sortKey === "tag" ? (left.tags[0] ?? "").toLowerCase() : (left.title ?? "").toLowerCase();
+    const rightValue =
+      state.sortKey === "tag" ? (right.tags[0] ?? "").toLowerCase() : (right.title ?? "").toLowerCase();
+    const compare = leftValue.localeCompare(rightValue);
+    return state.sortDirection === "asc" ? compare : compare * -1;
+  });
+
+  return filteredNotes;
+}
+
+function getFilteredTags() {
+  const query = state.query.trim().toLowerCase();
+  return getTagSummary().filter((item) => !query || item.tag.includes(query));
+}
+
+function getMatchingTagSuggestions(query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const selectedNote = getSelectedNote();
+  const usedTags = new Set(selectedNote?.tags ?? []);
+
+  if (!normalizedQuery) {
+    return getTagSummary().filter(({ tag }) => !usedTags.has(tag)).slice(0, 6);
+  }
+
+  return getTagSummary()
+    .filter(({ tag }) => tag.includes(normalizedQuery) && !usedTags.has(tag))
+    .slice(0, 6);
+}
+
+function showTagSuggestions() {
+  state.tagSuggestions = getMatchingTagSuggestions(tagInput.value);
+  state.activeSuggestionIndex = state.tagSuggestions.length ? 0 : -1;
+  renderTagSuggestions();
+}
+
+function hideTagSuggestions() {
+  state.tagSuggestions = [];
+  state.activeSuggestionIndex = -1;
+  renderTagSuggestions();
+}
+
+function renderTagSuggestions() {
+  tagSuggestionList.innerHTML = "";
+
+  if (!state.tagSuggestions.length) {
+    tagSuggestions.classList.add("is-hidden");
+    tagInput.setAttribute("aria-expanded", "false");
+    return;
+  }
+
+  state.tagSuggestions.forEach(({ tag, count }, index) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "tag-suggestion-item";
+    item.classList.toggle("is-active", index === state.activeSuggestionIndex);
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", index === state.activeSuggestionIndex ? "true" : "false");
+
+    const label = document.createElement("span");
+    label.textContent = tag;
+
+    const meta = document.createElement("span");
+    meta.className = "tag-suggestion-meta";
+    meta.textContent = `${count} note${count === 1 ? "" : "s"}`;
+
+    item.append(label, meta);
+    item.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      addTag(tag);
+    });
+
+    tagSuggestionList.append(item);
+  });
+
+  tagSuggestions.classList.remove("is-hidden");
+  tagInput.setAttribute("aria-expanded", "true");
+}
+
 function setBrowserMode(mode) {
   state.browserMode = mode;
   state.query = "";
@@ -138,11 +263,6 @@ function applyTagFilter(tag) {
   state.query = "";
   searchInput.value = "";
   render();
-}
-
-function setLibraryWidth(width) {
-  const clampedWidth = Math.max(280, Math.min(620, width));
-  appShell.style.setProperty("--sidebar-width", `${clampedWidth}px`);
 }
 
 function setSort(key) {
@@ -199,21 +319,27 @@ function updateSelectedNote(changes) {
   persistAndRender();
 }
 
-function addTag() {
-  const value = tagInput.value.trim().toLowerCase();
+function addTag(forcedValue) {
+  const value = (forcedValue ?? tagInput.value).trim().toLowerCase();
   if (!value) {
     return;
   }
 
   const note = getSelectedNote();
-  if (!note || note.tags.includes(value)) {
+  if (!note) {
+    return;
+  }
+
+  if (note.tags.includes(value)) {
     tagInput.value = "";
+    hideTagSuggestions();
     return;
   }
 
   note.tags.push(value);
   tagInput.value = "";
-  updateSelectedNote({ tags: note.tags });
+  hideTagSuggestions();
+  updateSelectedNote({ tags: [...note.tags].sort((a, b) => a.localeCompare(b)) });
 }
 
 function removeTag(tagToRemove) {
@@ -225,6 +351,10 @@ function removeTag(tagToRemove) {
   updateSelectedNote({
     tags: note.tags.filter((tag) => tag !== tagToRemove),
   });
+
+  if (state.selectedTag === tagToRemove && !getAllTags().includes(tagToRemove)) {
+    state.selectedTag = getAllTags()[0] ?? null;
+  }
 }
 
 function persistAndRender() {
@@ -242,39 +372,23 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function getFilteredNotes() {
-  const query = state.query.trim().toLowerCase();
-  const filteredNotes = !query
-    ? [...state.notes]
-    : state.notes.filter((note) => {
-        const haystack = [note.title, note.body, note.tags.join(" ")].join(" ").toLowerCase();
-        return haystack.includes(query);
-      });
+function createEmptyState(title, detail) {
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
 
-  filteredNotes.sort((left, right) => {
-    const leftValue =
-      state.sortKey === "tag" ? (left.tags[0] ?? "").toLowerCase() : (left.title ?? "").toLowerCase();
-    const rightValue =
-      state.sortKey === "tag" ? (right.tags[0] ?? "").toLowerCase() : (right.title ?? "").toLowerCase();
-    const compare = leftValue.localeCompare(rightValue);
-    return state.sortDirection === "asc" ? compare : compare * -1;
-  });
+  const heading = document.createElement("strong");
+  heading.textContent = title;
 
-  return filteredNotes;
+  const copy = document.createElement("span");
+  copy.textContent = detail;
+
+  empty.append(heading, copy);
+  return empty;
 }
 
-function getFilteredTags() {
-  const query = state.query.trim().toLowerCase();
-  return getTagSummary().filter((item) => !query || item.tag.includes(query));
-}
-
-function renderTagSuggestions() {
-  existingTagsList.innerHTML = "";
-  getAllTags().forEach((tag) => {
-    const option = document.createElement("option");
-    option.value = tag;
-    existingTagsList.append(option);
-  });
+function getNotePreview(note) {
+  const preview = note.body.trim().replace(/\s+/g, " ");
+  return preview || "No content yet";
 }
 
 function createNoteRow(note, onClick, onTagClick) {
@@ -283,10 +397,18 @@ function createNoteRow(note, onClick, onTagClick) {
   row.className = "note-item";
   row.classList.toggle("active", note.id === state.selectedId);
 
+  const main = document.createElement("div");
+  main.className = "note-item-main";
+
   const title = document.createElement("span");
   title.className = "note-item-title";
   title.textContent = note.title || "Untitled note";
-  row.append(title);
+
+  const preview = document.createElement("span");
+  preview.className = "note-item-preview";
+  preview.textContent = getNotePreview(note);
+
+  main.append(title, preview);
 
   const tags = document.createElement("div");
   tags.className = "note-item-tags";
@@ -310,7 +432,7 @@ function createNoteRow(note, onClick, onTagClick) {
     tags.append(pill);
   });
 
-  row.append(tags);
+  row.append(main, tags);
   row.addEventListener("click", onClick);
   return row;
 }
@@ -344,7 +466,7 @@ function renderNotesMode() {
 
   browserTitle.textContent = "Notes";
   browserCount.textContent = countLabel;
-  notesCount.textContent = state.query ? `Filtered | ${countLabel}` : "Library";
+  notesCount.textContent = state.query ? `Results | ${countLabel}` : "Library";
   searchLabel.textContent = "Search notes or tags";
   searchInput.placeholder = "Design, ideas, meeting...";
 
@@ -354,16 +476,24 @@ function renderNotesMode() {
 
   sortTitleButton.classList.toggle("is-active", state.sortKey === "title");
   sortTagButton.classList.toggle("is-active", state.sortKey === "tag");
-  sortTitleButton.textContent = state.sortKey === "title" ? `Title ${state.sortDirection === "asc" ? "^" : "v"}` : "Title";
-  sortTagButton.textContent = state.sortKey === "tag" ? `Tags ${state.sortDirection === "asc" ? "^" : "v"}` : "Tags";
+  sortTitleButton.textContent =
+    state.sortKey === "title" ? `Title ${state.sortDirection === "asc" ? "^" : "v"}` : "Title";
+  sortTagButton.textContent =
+    state.sortKey === "tag" ? `Tags ${state.sortDirection === "asc" ? "^" : "v"}` : "Tags";
 
   browserList.innerHTML = "";
 
+  if (!state.notes.length) {
+    browserList.append(
+      createEmptyState("No notes yet", "Create your first note to start building your library."),
+    );
+    return;
+  }
+
   if (!filteredNotes.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No notes match this search yet.";
-    browserList.append(empty);
+    browserList.append(
+      createEmptyState("No matching notes", "Try a different search or clear the current filter."),
+    );
     return;
   }
 
@@ -378,6 +508,55 @@ function renderNotesMode() {
     );
     browserList.append(item);
   });
+}
+
+function renderSelectedTagGroup() {
+  const selectedNotes = state.notes
+    .filter((note) => note.tags.includes(state.selectedTag))
+    .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
+
+  const group = tagNoteGroupTemplate.content.firstElementChild.cloneNode(true);
+  group.querySelector(".tag-focus-title").textContent = state.selectedTag;
+  group.querySelector(".tag-focus-count").textContent = `${selectedNotes.length} note${
+    selectedNotes.length === 1 ? "" : "s"
+  }`;
+
+  const headerBody = group.querySelector(".tag-note-header > div");
+  headerBody.className = "tag-focus-copy";
+
+  const badge = document.createElement("span");
+  badge.className = "tag-focus-badge";
+  badge.textContent = "Selected tag";
+  headerBody.append(badge);
+
+  const list = group.querySelector(".tag-note-list");
+
+  if (!selectedNotes.length) {
+    list.append(
+      createEmptyState(
+        "No notes use this tag yet",
+        "Select a different tag or add this tag to a note on the right.",
+      ),
+    );
+    return group;
+  }
+
+  selectedNotes.forEach((note) => {
+    const item = createNoteRow(
+      note,
+      () => {
+        state.selectedId = note.id;
+        render();
+      },
+      (tag) => {
+        state.selectedTag = tag;
+        renderBrowser();
+      },
+    );
+    list.append(item);
+  });
+
+  return group;
 }
 
 function renderTagsMode() {
@@ -395,44 +574,31 @@ function renderTagsMode() {
   deleteNoteButton.classList.add("is-hidden");
   browserList.innerHTML = "";
 
-  if (!filteredTags.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No tags match this search yet.";
-    browserList.append(empty);
+  if (!totalTags) {
+    browserList.append(
+      createEmptyState("No tags yet", "Add tags to your notes to organize them here."),
+    );
     return;
   }
 
-  if (!state.selectedTag || !filteredTags.some((item) => item.tag === state.selectedTag)) {
+  if (!filteredTags.length) {
+    browserList.append(
+      createEmptyState("No matching tags", "Try a different search or clear the current filter."),
+    );
+    return;
+  }
+
+  if (!state.selectedTag || !getAllTags().includes(state.selectedTag)) {
     state.selectedTag = filteredTags[0]?.tag ?? null;
   }
 
   if (state.selectedTag) {
-    const selectedNotes = state.notes
-      .filter((note) => note.tags.includes(state.selectedTag))
-      .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
+    browserList.append(renderSelectedTagGroup());
 
-    const group = tagNoteGroupTemplate.content.firstElementChild.cloneNode(true);
-    group.querySelector(".tag-focus-title").textContent = state.selectedTag;
-    group.querySelector(".tag-focus-count").textContent = `${selectedNotes.length} note${selectedNotes.length === 1 ? "" : "s"}`;
-
-    const list = group.querySelector(".tag-note-list");
-    selectedNotes.forEach((note) => {
-      const item = createNoteRow(
-        note,
-        () => {
-          state.selectedId = note.id;
-          render();
-        },
-        (tag) => {
-          state.selectedTag = tag;
-          renderBrowser();
-        },
-      );
-      list.append(item);
-    });
-
-    browserList.append(group);
+    const divider = document.createElement("div");
+    divider.className = "tag-directory-divider";
+    divider.textContent = "All tags";
+    browserList.append(divider);
   }
 
   filteredTags.forEach(({ tag, count }) => {
@@ -477,6 +643,7 @@ function renderEditor() {
     const pill = tagPillTemplate.content.firstElementChild.cloneNode(true);
     pill.querySelector(".tag-label").textContent = tag;
     pill.classList.add("filterable");
+    pill.setAttribute("tabindex", "0");
     pill.addEventListener("click", (event) => {
       if (event.target.closest(".tag-remove")) {
         return;
@@ -484,20 +651,40 @@ function renderEditor() {
 
       applyTagFilter(tag);
     });
+    pill.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        applyTagFilter(tag);
+      }
+    });
     pill.querySelector(".tag-remove").addEventListener("click", () => removeTag(tag));
     tagList.append(pill);
   });
 }
 
 function render() {
-  renderTagSuggestions();
+  setLibraryWidth(state.paneWidth);
   renderBrowser();
   renderEditor();
+  renderTagSuggestions();
+}
+
+function clearSearchAndSuggestions() {
+  state.query = "";
+  searchInput.value = "";
+  hideTagSuggestions();
+  renderBrowser();
+}
+
+function focusTagInput() {
+  tagInput.focus();
+  tagInput.select();
+  showTagSuggestions();
 }
 
 newNoteButton.addEventListener("click", createNote);
 deleteNoteButton.addEventListener("click", deleteSelectedNote);
-addTagButton.addEventListener("click", addTag);
+addTagButton.addEventListener("click", () => addTag());
 openDataFolderButton?.addEventListener("click", openDataFolder);
 sortTitleButton.addEventListener("click", () => setSort("title"));
 sortTagButton.addEventListener("click", () => setSort("tag"));
@@ -517,10 +704,74 @@ searchInput.addEventListener("input", (event) => {
   renderBrowser();
 });
 
+tagInput.addEventListener("focus", showTagSuggestions);
+tagInput.addEventListener("input", showTagSuggestions);
+tagInput.addEventListener("blur", () => {
+  setTimeout(() => {
+    if (!tagSuggestions.contains(document.activeElement)) {
+      hideTagSuggestions();
+    }
+  }, 80);
+});
+
 tagInput.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" && state.tagSuggestions.length) {
+    event.preventDefault();
+    state.activeSuggestionIndex = (state.activeSuggestionIndex + 1) % state.tagSuggestions.length;
+    renderTagSuggestions();
+    return;
+  }
+
+  if (event.key === "ArrowUp" && state.tagSuggestions.length) {
+    event.preventDefault();
+    state.activeSuggestionIndex =
+      (state.activeSuggestionIndex - 1 + state.tagSuggestions.length) % state.tagSuggestions.length;
+    renderTagSuggestions();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    hideTagSuggestions();
+    tagInput.blur();
+    return;
+  }
+
   if (event.key === "Enter") {
     event.preventDefault();
-    addTag();
+    const activeSuggestion = state.tagSuggestions[state.activeSuggestionIndex];
+    addTag(activeSuggestion?.tag ?? undefined);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  const isModifier = event.ctrlKey || event.metaKey;
+
+  if (isModifier && event.key.toLowerCase() === "n") {
+    event.preventDefault();
+    createNote();
+    return;
+  }
+
+  if (isModifier && event.key.toLowerCase() === "f") {
+    event.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+    return;
+  }
+
+  if (isModifier && event.shiftKey && event.key.toLowerCase() === "t") {
+    event.preventDefault();
+    focusTagInput();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (document.activeElement === tagInput && state.tagSuggestions.length) {
+      hideTagSuggestions();
+      return;
+    }
+
+    clearSearchAndSuggestions();
   }
 });
 
@@ -542,6 +793,11 @@ paneResizer?.addEventListener("pointerup", (event) => {
   isResizingPane = false;
   paneResizer.classList.remove("is-dragging");
   paneResizer.releasePointerCapture(event.pointerId);
+  scheduleSettingsSave();
+});
+
+window.addEventListener("resize", () => {
+  setLibraryWidth(state.paneWidth);
 });
 
 async function initializeApp() {
@@ -552,6 +808,14 @@ async function initializeApp() {
     loadedNotes = persisted?.notes ?? [];
   } catch (error) {
     console.error("Failed to load persisted notes:", error);
+  }
+
+  try {
+    const settings = await window.goofNotesApp?.settings?.load();
+    setLibraryWidth(settings?.paneWidth ?? DEFAULT_LIBRARY_WIDTH);
+  } catch (error) {
+    console.error("Failed to load UI settings:", error);
+    setLibraryWidth(DEFAULT_LIBRARY_WIDTH);
   }
 
   if (!loadedNotes.length) {

@@ -16,7 +16,7 @@
     <div class="app-shell" id="app-shell">
       <aside class="mode-rail glass-panel" aria-label="Navigation mode">
         <div class="mode-rail-top">
-          <button class="rail-button is-active" id="mode-notes-button" type="button" aria-label="Show notes">
+          <button class="rail-button is-active" id="mode-notes-button" type="button" aria-label="Show notes" title="Notes">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M7 4.5h7l3.5 3.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5.5 19V6A1.5 1.5 0 0 1 7 4.5Z"
@@ -31,7 +31,7 @@
             </svg>
           </button>
 
-          <button class="rail-button" id="mode-tags-button" type="button" aria-label="Show tags">
+          <button class="rail-button" id="mode-tags-button" type="button" aria-label="Show tags" title="Tags">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M11 4.5H6A1.5 1.5 0 0 0 4.5 6v5.2a2 2 0 0 0 .6 1.4l6.8 6.8a1.5 1.5 0 0 0 2.1 0l5.4-5.4a1.5 1.5 0 0 0 0-2.1l-6.8-6.8a2 2 0 0 0-1.4-.6Z"
@@ -144,18 +144,24 @@
             <div class="field">
               <span>Tags</span>
               <div class="tag-input-row">
-                <input
-                  id="tag-input"
-                  type="text"
-                  list="existing-tags-list"
-                  placeholder="Type a tag and press Add"
-                  autocomplete="off"
-                />
+                <div class="tag-input-wrap">
+                  <input
+                    id="tag-input"
+                    type="text"
+                    placeholder="Type a tag and press Add"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-controls="tag-suggestion-list"
+                  />
+                  <div class="tag-suggestions is-hidden" id="tag-suggestions">
+                    <div class="tag-suggestion-list" id="tag-suggestion-list" role="listbox"></div>
+                  </div>
+                </div>
                 <button class="secondary-button" id="add-tag-button" type="button">
                   Add tag
                 </button>
               </div>
-              <datalist id="existing-tags-list"></datalist>
             </div>
             <div class="tag-list" id="tag-list" aria-live="polite"></div>
           </div>

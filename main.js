@@ -4,6 +4,7 @@ const path = require("path");
 
 const DATA_DIRECTORY = "data";
 const NOTES_FILE = "notes-db.json";
+const SETTINGS_FILE = "ui-settings.json";
 const ATTACHMENTS_DIRECTORY = "attachments";
 
 function getStoragePaths() {
@@ -14,6 +15,7 @@ function getStoragePaths() {
     userDataPath,
     dataDir,
     notesFilePath: path.join(dataDir, NOTES_FILE),
+    settingsFilePath: path.join(dataDir, SETTINGS_FILE),
     attachmentsDir: path.join(dataDir, ATTACHMENTS_DIRECTORY),
   };
 }
@@ -75,6 +77,45 @@ async function savePersistedNotes(notes) {
   };
 }
 
+async function loadUiSettings() {
+  const paths = await ensureStorage();
+
+  try {
+    const raw = await fs.readFile(paths.settingsFilePath, "utf8");
+    const parsed = JSON.parse(raw);
+
+    return {
+      paneWidth: Number.isFinite(parsed?.paneWidth) ? parsed.paneWidth : null,
+    };
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("Failed to read UI settings:", error);
+    }
+
+    return {
+      paneWidth: null,
+    };
+  }
+}
+
+async function saveUiSettings(settings = {}) {
+  const paths = await ensureStorage();
+  const existing = await loadUiSettings();
+  const payload = {
+    ...existing,
+    ...settings,
+  };
+  const tempPath = `${paths.settingsFilePath}.tmp`;
+
+  await fs.writeFile(tempPath, JSON.stringify(payload, null, 2), "utf8");
+  await fs.rename(tempPath, paths.settingsFilePath);
+
+  return {
+    ok: true,
+    settings: payload,
+  };
+}
+
 async function openDataFolder() {
   const paths = await ensureStorage();
   const result = await shell.openPath(paths.dataDir);
@@ -110,6 +151,8 @@ app.whenReady().then(() => {
   ipcMain.handle("notes:load", async () => loadPersistedNotes());
   ipcMain.handle("notes:save", async (_event, notes) => savePersistedNotes(notes));
   ipcMain.handle("notes:openDataFolder", async () => openDataFolder());
+  ipcMain.handle("settings:load", async () => loadUiSettings());
+  ipcMain.handle("settings:save", async (_event, settings) => saveUiSettings(settings));
 
   createWindow();
 
