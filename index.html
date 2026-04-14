@@ -15,16 +15,25 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar glass-panel">
-        <div class="brand-block">
-          <img class="brand-mark" src="assets/logo_notes_goof.png" alt="Goof Notes logo" />
-          <div>
-            <h1>Goof Notes</h1>
+        <div class="sidebar-top">
+          <div class="brand-block">
+            <img class="brand-mark" src="assets/logo_notes_goof.png" alt="Goof Notes logo" />
+            <div class="brand-copy">
+              <h1>Goof Notes</h1>
+              <p id="notes-count-inline">0 notes</p>
+            </div>
+          </div>
+
+          <div class="sidebar-actions">
+            <button class="primary-button" id="new-note-button" type="button">
+              New note
+            </button>
+
+            <button class="secondary-button utility-button" id="open-data-folder-button" type="button">
+              Open data folder
+            </button>
           </div>
         </div>
-
-        <button class="primary-button" id="new-note-button" type="button">
-          New note
-        </button>
 
         <label class="search-field" for="search-input">
           <span>Search notes or tags</span>
@@ -37,7 +46,7 @@
         </label>
 
         <div class="notes-toolbar">
-          <p id="notes-count">0 notes</p>
+          <p id="notes-count">Library</p>
           <button class="ghost-button" id="delete-note-button" type="button">
             Delete
           </button>
@@ -53,11 +62,16 @@
               <p class="eyebrow">Current note</p>
               <h3 id="note-status">Ready to write</h3>
             </div>
-            <p class="timestamp" id="updated-at">Saved locally</p>
+            <div class="editor-meta">
+              <button class="ghost-button subtle-button" id="open-data-folder-inline" type="button">
+                Open data folder
+              </button>
+              <p class="timestamp" id="updated-at">Saved locally</p>
+            </div>
           </div>
 
           <label class="field">
-            <span>Header</span>
+            <span>Title</span>
             <input
               id="note-title"
               type="text"
@@ -68,7 +82,7 @@
           </label>
 
           <label class="field">
-            <span>Text</span>
+            <span>Content</span>
             <textarea
               id="note-body"
               rows="14"

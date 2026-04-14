@@ -2,6 +2,7 @@ const STORAGE_KEY = "goof-notes-app";
 
 const notesList = document.getElementById("notes-list");
 const notesCount = document.getElementById("notes-count");
+const notesCountInline = document.getElementById("notes-count-inline");
 const noteStatus = document.getElementById("note-status");
 const updatedAt = document.getElementById("updated-at");
 const noteTitle = document.getElementById("note-title");
@@ -12,6 +13,10 @@ const tagList = document.getElementById("tag-list");
 const newNoteButton = document.getElementById("new-note-button");
 const deleteNoteButton = document.getElementById("delete-note-button");
 const addTagButton = document.getElementById("add-tag-button");
+const openDataFolderButtons = [
+  document.getElementById("open-data-folder-button"),
+  document.getElementById("open-data-folder-inline"),
+];
 const noteItemTemplate = document.getElementById("note-item-template");
 const tagPillTemplate = document.getElementById("tag-pill-template");
 
@@ -54,6 +59,22 @@ async function saveNotes() {
   } catch (error) {
     console.error("Failed to save notes:", error);
     state.saveMessage = "Save failed";
+  }
+
+  renderEditor();
+}
+
+async function openDataFolder() {
+  if (!window.goofNotesApp?.notesStorage?.openDataFolder) {
+    return;
+  }
+
+  try {
+    const result = await window.goofNotesApp.notesStorage.openDataFolder();
+    state.saveMessage = result?.ok ? "Opened data folder" : "Could not open data folder";
+  } catch (error) {
+    console.error("Failed to open data folder:", error);
+    state.saveMessage = "Could not open data folder";
   }
 
   renderEditor();
@@ -178,7 +199,9 @@ function getFilteredNotes() {
 function renderNotesList() {
   const filteredNotes = getFilteredNotes();
   notesList.innerHTML = "";
-  notesCount.textContent = `${filteredNotes.length} note${filteredNotes.length === 1 ? "" : "s"}`;
+  const countLabel = `${filteredNotes.length} note${filteredNotes.length === 1 ? "" : "s"}`;
+  notesCount.textContent = state.query ? `Filtered | ${countLabel}` : "Library";
+  notesCountInline.textContent = countLabel;
 
   if (!filteredNotes.length) {
     const empty = document.createElement("div");
@@ -228,7 +251,7 @@ function renderEditor() {
   }
 
   noteStatus.textContent = note.title || "Untitled note";
-  updatedAt.textContent = `${state.saveMessage} • Updated ${formatDate(note.updatedAt)}`;
+  updatedAt.textContent = `${state.saveMessage} | Updated ${formatDate(note.updatedAt)}`;
   noteTitle.value = note.title;
   noteBody.value = note.body;
   tagList.innerHTML = "";
@@ -257,6 +280,9 @@ function render() {
 newNoteButton.addEventListener("click", createNote);
 deleteNoteButton.addEventListener("click", deleteSelectedNote);
 addTagButton.addEventListener("click", addTag);
+openDataFolderButtons.forEach((button) => {
+  button?.addEventListener("click", openDataFolder);
+});
 
 noteTitle.addEventListener("input", (event) => {
   updateSelectedNote({ title: event.target.value });

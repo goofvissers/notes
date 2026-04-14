@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 
@@ -75,6 +75,17 @@ async function savePersistedNotes(notes) {
   };
 }
 
+async function openDataFolder() {
+  const paths = await ensureStorage();
+  const result = await shell.openPath(paths.dataDir);
+
+  return {
+    ok: result === "",
+    path: paths.dataDir,
+    error: result || null,
+  };
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1440,
@@ -98,6 +109,7 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle("notes:load", async () => loadPersistedNotes());
   ipcMain.handle("notes:save", async (_event, notes) => savePersistedNotes(notes));
+  ipcMain.handle("notes:openDataFolder", async () => openDataFolder());
 
   createWindow();
 

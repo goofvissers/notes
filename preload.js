@@ -5,6 +5,7 @@ const api = {
   notesStorage: {
     load: () => ipcRenderer.invoke("notes:load"),
     save: (notes) => ipcRenderer.invoke("notes:save", notes),
+    openDataFolder: () => ipcRenderer.invoke("notes:openDataFolder"),
   },
 };
 

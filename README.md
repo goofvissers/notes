@@ -9,6 +9,7 @@ A modern Apple-inspired notes app for Windows, now wrapped as a real Electron de
 - Per-note tag creation and removal
 - Search across note titles, content, and tags
 - Automatic local persistence in the Windows app data folder
+- Quick action to open the app data folder from inside the app
 - Storage layout designed to grow into note attachments and embedded images
 
 ## Development
