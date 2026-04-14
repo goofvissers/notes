@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumen Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar glass-panel">
+        <div class="brand-block">
+          <div class="brand-mark">L</div>
+          <div>
+            <p class="eyebrow">Windows Notes</p>
+            <h1>Lumen Notes</h1>
+          </div>
+        </div>
+
+        <button class="primary-button" id="new-note-button" type="button">
+          New note
+        </button>
+
+        <label class="search-field" for="search-input">
+          <span>Search notes or tags</span>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Design, ideas, meeting..."
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="notes-toolbar">
+          <p id="notes-count">0 notes</p>
+          <button class="ghost-button" id="delete-note-button" type="button">
+            Delete
+          </button>
+        </div>
+
+        <div class="notes-list" id="notes-list" aria-live="polite"></div>
+      </aside>
+
+      <main class="editor-area">
+        <section class="hero-card">
+          <p class="eyebrow">Focused writing space</p>
+          <div class="hero-heading">
+            <h2>Capture ideas with clarity.</h2>
+            <p>
+              A clean desktop note experience with lightweight organization and
+              fast tagging.
+            </p>
+          </div>
+        </section>
+
+        <section class="editor-card glass-panel">
+          <div class="editor-topbar">
+            <div>
+              <p class="eyebrow">Current note</p>
+              <h3 id="note-status">Ready to write</h3>
+            </div>
+            <p class="timestamp" id="updated-at">Saved locally</p>
+          </div>
+
+          <label class="field">
+            <span>Header</span>
+            <input
+              id="note-title"
+              type="text"
+              maxlength="120"
+              placeholder="Give this note a clear title"
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="field">
+            <span>Text</span>
+            <textarea
+              id="note-body"
+              rows="14"
+              placeholder="Write your note here..."
+            ></textarea>
+          </label>
+
+          <div class="tags-panel">
+            <div class="field">
+              <span>Tags</span>
+              <div class="tag-input-row">
+                <input
+                  id="tag-input"
+                  type="text"
+                  placeholder="Type a tag and press Add"
+                  autocomplete="off"
+                />
+                <button class="secondary-button" id="add-tag-button" type="button">
+                  Add tag
+                </button>
+              </div>
+            </div>
+            <div class="tag-list" id="tag-list" aria-live="polite"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="note-item-template">
+      <button class="note-item" type="button">
+        <div class="note-item-header">
+          <strong class="note-item-title"></strong>
+          <span class="note-item-date"></span>
+        </div>
+        <p class="note-item-preview"></p>
+        <div class="note-item-tags"></div>
+      </button>
+    </template>
+
+    <template id="tag-pill-template">
+      <span class="tag-pill">
+        <span class="tag-label"></span>
+        <button class="tag-remove" type="button" aria-label="Remove tag">x</button>
+      </span>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
