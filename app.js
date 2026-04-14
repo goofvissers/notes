@@ -27,18 +27,14 @@ const defaultNotes = [
 ];
 
 let state = {
-  notes: loadNotes(),
+  notes: [],
   selectedId: null,
   query: "",
+  saveMessage: "Saved on this device",
 };
+let saveTimer = null;
 
-if (!state.notes.length) {
-  state.notes = defaultNotes;
-}
-
-state.selectedId = state.notes[0]?.id ?? null;
-
-function loadNotes() {
+function loadLegacyNotes() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -47,8 +43,29 @@ function loadNotes() {
   }
 }
 
-function saveNotes() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+async function saveNotes() {
+  if (!window.goofNotesApp?.notesStorage) {
+    return;
+  }
+
+  try {
+    await window.goofNotesApp.notesStorage.save(state.notes);
+    state.saveMessage = "Saved on this device";
+  } catch (error) {
+    console.error("Failed to save notes:", error);
+    state.saveMessage = "Save failed";
+  }
+
+  renderEditor();
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  state.saveMessage = "Saving...";
+  renderEditor();
+  saveTimer = setTimeout(() => {
+    saveNotes();
+  }, 250);
 }
 
 function applyTagFilter(tag) {
@@ -133,7 +150,7 @@ function removeTag(tagToRemove) {
 
 function persistAndRender() {
   state.notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  saveNotes();
+  scheduleSave();
   render();
 }
 
@@ -203,7 +220,7 @@ function renderEditor() {
 
   if (!note) {
     noteStatus.textContent = "No note selected";
-    updatedAt.textContent = "Saved locally";
+    updatedAt.textContent = state.saveMessage;
     noteTitle.value = "";
     noteBody.value = "";
     tagList.innerHTML = "";
@@ -211,7 +228,7 @@ function renderEditor() {
   }
 
   noteStatus.textContent = note.title || "Untitled note";
-  updatedAt.textContent = `Updated ${formatDate(note.updatedAt)}`;
+  updatedAt.textContent = `${state.saveMessage} • Updated ${formatDate(note.updatedAt)}`;
   noteTitle.value = note.title;
   noteBody.value = note.body;
   tagList.innerHTML = "";
@@ -261,8 +278,37 @@ tagInput.addEventListener("keydown", (event) => {
   }
 });
 
-if (!state.selectedId) {
-  createNote();
-} else {
+async function initializeApp() {
+  let loadedNotes = [];
+
+  try {
+    const persisted = await window.goofNotesApp?.notesStorage?.load();
+    loadedNotes = persisted?.notes ?? [];
+  } catch (error) {
+    console.error("Failed to load persisted notes:", error);
+  }
+
+  if (!loadedNotes.length) {
+    const legacyNotes = loadLegacyNotes();
+    if (legacyNotes.length) {
+      loadedNotes = legacyNotes;
+      state.notes = legacyNotes;
+      state.selectedId = legacyNotes[0]?.id ?? null;
+      state.saveMessage = "Migrating existing notes...";
+      render();
+      await saveNotes();
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  state.notes = loadedNotes.length ? loadedNotes : defaultNotes;
+  state.selectedId = state.notes[0]?.id ?? null;
+
+  if (!loadedNotes.length) {
+    await saveNotes();
+  }
+
   render();
 }
+
+initializeApp();
