@@ -1,6 +1,6 @@
 {
   "name": "goof-notes",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "A modern Windows notes app with title, body, and tagging.",
   "main": "main.js",
   "author": "",

@@ -14,17 +14,54 @@
   </head>
   <body>
     <div class="app-shell" id="app-shell">
-      <aside class="sidebar glass-panel">
-        <div class="sidebar-top">
+      <aside class="mode-rail glass-panel" aria-label="Navigation mode">
+        <div class="mode-rail-top">
+          <button class="rail-button is-active" id="mode-notes-button" type="button" aria-label="Show notes">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M7 4.5h7l3.5 3.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5.5 19V6A1.5 1.5 0 0 1 7 4.5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.8"
+              />
+              <path d="M14 4.5V8h3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+              <path d="M8.5 11h6.5M8.5 14h6.5M8.5 17h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8" />
+            </svg>
+          </button>
+
+          <button class="rail-button" id="mode-tags-button" type="button" aria-label="Show tags">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M11 4.5H6A1.5 1.5 0 0 0 4.5 6v5.2a2 2 0 0 0 .6 1.4l6.8 6.8a1.5 1.5 0 0 0 2.1 0l5.4-5.4a1.5 1.5 0 0 0 0-2.1l-6.8-6.8a2 2 0 0 0-1.4-.6Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.8"
+              />
+              <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="mode-rail-bottom">
+          <img class="rail-logo" src="assets/logo_notes_goof.png" alt="Goof Notes" />
+        </div>
+      </aside>
+
+      <aside class="browser-pane glass-panel">
+        <div class="browser-top">
           <div class="brand-block">
             <img class="brand-mark" src="assets/logo_notes_goof.png" alt="Goof Notes logo" />
             <div class="brand-copy">
-              <h1>Goof Notes</h1>
-              <p id="notes-count-inline">0 notes</p>
+              <h1 id="browser-title">Notes</h1>
+              <p id="browser-count">0 notes</p>
             </div>
           </div>
 
-          <div class="sidebar-actions">
+          <div class="browser-actions">
             <button class="primary-button" id="new-note-button" type="button">
               New note
             </button>
@@ -32,7 +69,7 @@
         </div>
 
         <label class="search-field" for="search-input">
-          <span>Search notes or tags</span>
+          <span id="search-label">Search notes or tags</span>
           <input
             id="search-input"
             type="search"
@@ -41,14 +78,14 @@
           />
         </label>
 
-        <div class="notes-toolbar">
+        <div class="notes-toolbar" id="notes-toolbar">
           <p id="notes-count">Library</p>
           <button class="ghost-button" id="delete-note-button" type="button">
             Delete
           </button>
         </div>
 
-        <div class="notes-columns">
+        <div class="notes-columns" id="notes-columns">
           <button class="column-button" id="sort-title-button" type="button">
             Title
           </button>
@@ -57,7 +94,7 @@
           </button>
         </div>
 
-        <div class="notes-list" id="notes-list" aria-live="polite"></div>
+        <div class="browser-list" id="browser-list" aria-live="polite"></div>
       </aside>
 
       <div
@@ -65,7 +102,7 @@
         id="pane-resizer"
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize library panel"
+        aria-label="Resize browser panel"
       ></div>
 
       <main class="editor-area">
@@ -98,7 +135,7 @@
             <span>Content</span>
             <textarea
               id="note-body"
-              rows="14"
+              rows="10"
               placeholder="Write your note here..."
             ></textarea>
           </label>
@@ -110,6 +147,7 @@
                 <input
                   id="tag-input"
                   type="text"
+                  list="existing-tags-list"
                   placeholder="Type a tag and press Add"
                   autocomplete="off"
                 />
@@ -117,6 +155,7 @@
                   Add tag
                 </button>
               </div>
+              <datalist id="existing-tags-list"></datalist>
             </div>
             <div class="tag-list" id="tag-list" aria-live="polite"></div>
           </div>
@@ -129,6 +168,28 @@
         <span class="note-item-title"></span>
         <div class="note-item-tags"></div>
       </button>
+    </template>
+
+    <template id="tag-item-template">
+      <button class="tag-browser-item" type="button">
+        <div class="tag-browser-row">
+          <strong class="tag-browser-name"></strong>
+          <span class="tag-browser-count"></span>
+        </div>
+      </button>
+    </template>
+
+    <template id="tag-note-group-template">
+      <section class="tag-note-group">
+        <div class="tag-note-header">
+          <div>
+            <p class="eyebrow">Selected tag</p>
+            <h2 class="tag-focus-title"></h2>
+          </div>
+          <span class="tag-focus-count"></span>
+        </div>
+        <div class="tag-note-list"></div>
+      </section>
     </template>
 
     <template id="tag-pill-template">

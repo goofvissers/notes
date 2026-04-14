@@ -6,5 +6,36 @@
 [ ] The list of notes at the left should only contain the title of the note, the tag must still be visible
 [ ] When I click a tag in a note, the notes list must be filtered
 
+1.0.2
+[ ] When I install a new version my notes are gone, can we do something about it? I will add pictures to notes in the future, so consider that
+
+1.0.3/4
+[ ] Add "Open data folder"
+[ ] The layout needs to be tighter, there is a lot of whitespace, see uploaded picture
+
+
+1.0.5
+[ ] Remove "Open data folder" add the top of the note
+[ ] Make the initial size of the "CONTENT" part, where I write a bit smaller: less high
+[ ] Also the handle (bottom right) to enlarge the "CONTENT" part does not really work
+[ ] The note titles in the library list must no be bold
+[ ] Also in the library list, add the tags as a seperate column next to the note title
+[ ] library list: let me sort by note title and tag
+[ ] add a slider in between the library list an the note part on the right so i can expand the library width or make it smaller
+
+1.0.6/7
+[ ] When I enter the text for a tag it needs to suggest existing tags
+[ ] Create another column in the app:this shows a note icon and a tag icon. if you select the note icon you will see the notes in the second column, if you select the tag icon you will see the tags listed. When I select a tag, the tag goes to the top and below the notes with that tag are listed ( see examples)
+
+1.0.8
+[ ] I want the ability to add images to notes, and the ability to resize the images
+[ ] I also want codeblock in notes: `codeblock`
+[ ] Make the corner radius 1mm for all corners in de app
+[ ] Next to "Open data folder" add the ability to create a back up file (zip) of all the notes and attachments and the ability to save this zip to a location that you can choose
+[ ] Loose the "DELETE" button, i want to right click on a note and/or tag to delete it, deleting a tag doesn't delete a note
+
+
 
 [ ] One small limitation: it’s using the default Electron app icon right now, and the installer is unsigned. If you want, I can do the next polish pass and add a proper app icon, custom titlebar behavior, and a more native-feeling notes data store.
+[ ] One small implementation note: the tag suggestions use the browser’s native autocomplete dropdown, which is lightweight and stable. If you want, the next pass can upgrade that into a richer custom suggestion menu with keyboard navigation and highlighted matches.
+[ ] Installed file size is large, can you make it smaller

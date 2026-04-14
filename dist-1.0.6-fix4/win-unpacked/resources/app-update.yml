@@ -1,0 +1,4 @@
+owner: goofvissers
+repo: notes
+provider: github
+updaterCacheDirName: goof-notes-updater
