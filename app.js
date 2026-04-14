@@ -3,6 +3,7 @@ const STORAGE_KEY = "goof-notes-app";
 const notesList = document.getElementById("notes-list");
 const notesCount = document.getElementById("notes-count");
 const notesCountInline = document.getElementById("notes-count-inline");
+const appShell = document.getElementById("app-shell");
 const noteStatus = document.getElementById("note-status");
 const updatedAt = document.getElementById("updated-at");
 const noteTitle = document.getElementById("note-title");
@@ -13,10 +14,10 @@ const tagList = document.getElementById("tag-list");
 const newNoteButton = document.getElementById("new-note-button");
 const deleteNoteButton = document.getElementById("delete-note-button");
 const addTagButton = document.getElementById("add-tag-button");
-const openDataFolderButtons = [
-  document.getElementById("open-data-folder-button"),
-  document.getElementById("open-data-folder-inline"),
-];
+const openDataFolderButton = document.getElementById("open-data-folder-inline");
+const sortTitleButton = document.getElementById("sort-title-button");
+const sortTagButton = document.getElementById("sort-tag-button");
+const paneResizer = document.getElementById("pane-resizer");
 const noteItemTemplate = document.getElementById("note-item-template");
 const tagPillTemplate = document.getElementById("tag-pill-template");
 
@@ -36,8 +37,11 @@ let state = {
   selectedId: null,
   query: "",
   saveMessage: "Saved on this device",
+  sortKey: "title",
+  sortDirection: "asc",
 };
 let saveTimer = null;
+let isResizingPane = false;
 
 function loadLegacyNotes() {
   try {
@@ -92,6 +96,22 @@ function scheduleSave() {
 function applyTagFilter(tag) {
   state.query = tag;
   searchInput.value = tag;
+  renderNotesList();
+}
+
+function setLibraryWidth(width) {
+  const clampedWidth = Math.max(240, Math.min(560, width));
+  appShell.style.setProperty("--sidebar-width", `${clampedWidth}px`);
+}
+
+function setSort(key) {
+  if (state.sortKey === key) {
+    state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
+  } else {
+    state.sortKey = key;
+    state.sortDirection = "asc";
+  }
+
   renderNotesList();
 }
 
@@ -186,14 +206,23 @@ function formatDate(value) {
 
 function getFilteredNotes() {
   const query = state.query.trim().toLowerCase();
-  if (!query) {
-    return state.notes;
-  }
-
-  return state.notes.filter((note) => {
+  const filteredNotes = !query
+    ? [...state.notes]
+    : state.notes.filter((note) => {
     const haystack = [note.title, note.body, note.tags.join(" ")].join(" ").toLowerCase();
     return haystack.includes(query);
   });
+
+  filteredNotes.sort((left, right) => {
+    const leftValue =
+      state.sortKey === "tag" ? (left.tags[0] ?? "").toLowerCase() : (left.title ?? "").toLowerCase();
+    const rightValue =
+      state.sortKey === "tag" ? (right.tags[0] ?? "").toLowerCase() : (right.title ?? "").toLowerCase();
+    const compare = leftValue.localeCompare(rightValue);
+    return state.sortDirection === "asc" ? compare : compare * -1;
+  });
+
+  return filteredNotes;
 }
 
 function renderNotesList() {
@@ -202,6 +231,10 @@ function renderNotesList() {
   const countLabel = `${filteredNotes.length} note${filteredNotes.length === 1 ? "" : "s"}`;
   notesCount.textContent = state.query ? `Filtered | ${countLabel}` : "Library";
   notesCountInline.textContent = countLabel;
+  sortTitleButton.classList.toggle("is-active", state.sortKey === "title");
+  sortTagButton.classList.toggle("is-active", state.sortKey === "tag");
+  sortTitleButton.textContent = state.sortKey === "title" ? `Title ${state.sortDirection === "asc" ? "^" : "v"}` : "Title";
+  sortTagButton.textContent = state.sortKey === "tag" ? `Tags ${state.sortDirection === "asc" ? "^" : "v"}` : "Tags";
 
   if (!filteredNotes.length) {
     const empty = document.createElement("div");
@@ -217,6 +250,13 @@ function renderNotesList() {
     item.querySelector(".note-item-title").textContent = note.title || "Untitled note";
 
     const tagsContainer = item.querySelector(".note-item-tags");
+    if (!note.tags.length) {
+      const emptyTag = document.createElement("span");
+      emptyTag.className = "mini-tag";
+      emptyTag.textContent = "No tags";
+      tagsContainer.append(emptyTag);
+    }
+
     note.tags.forEach((tag) => {
       const pill = document.createElement("button");
       pill.type = "button";
@@ -280,9 +320,9 @@ function render() {
 newNoteButton.addEventListener("click", createNote);
 deleteNoteButton.addEventListener("click", deleteSelectedNote);
 addTagButton.addEventListener("click", addTag);
-openDataFolderButtons.forEach((button) => {
-  button?.addEventListener("click", openDataFolder);
-});
+openDataFolderButton?.addEventListener("click", openDataFolder);
+sortTitleButton.addEventListener("click", () => setSort("title"));
+sortTagButton.addEventListener("click", () => setSort("tag"));
 
 noteTitle.addEventListener("input", (event) => {
   updateSelectedNote({ title: event.target.value });
@@ -302,6 +342,26 @@ tagInput.addEventListener("keydown", (event) => {
     event.preventDefault();
     addTag();
   }
+});
+
+paneResizer?.addEventListener("pointerdown", (event) => {
+  isResizingPane = true;
+  paneResizer.classList.add("is-dragging");
+  paneResizer.setPointerCapture(event.pointerId);
+});
+
+paneResizer?.addEventListener("pointermove", (event) => {
+  if (!isResizingPane) {
+    return;
+  }
+
+  setLibraryWidth(event.clientX - 10);
+});
+
+paneResizer?.addEventListener("pointerup", (event) => {
+  isResizingPane = false;
+  paneResizer.classList.remove("is-dragging");
+  paneResizer.releasePointerCapture(event.pointerId);
 });
 
 async function initializeApp() {
@@ -338,3 +398,4 @@ async function initializeApp() {
 }
 
 initializeApp();
+

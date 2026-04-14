@@ -12,6 +12,7 @@
   --radius-xl: 32px;
   --radius-lg: 24px;
   --radius-md: 18px;
+  --sidebar-width: 320px;
 }
 
 * {
@@ -47,7 +48,7 @@ button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: minmax(240px, var(--sidebar-width)) 8px minmax(0, 1fr);
   gap: 10px;
   min-height: 100vh;
   padding: 10px;
@@ -124,7 +125,7 @@ button {
 
 .sidebar-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -142,11 +143,6 @@ button {
 .secondary-button {
   padding: 10px 13px;
   font-weight: 700;
-}
-
-.utility-button {
-  justify-content: center;
-  white-space: nowrap;
 }
 
 .primary-button {
@@ -221,7 +217,8 @@ button {
 }
 
 .field textarea {
-  min-height: calc(100vh - 270px);
+  height: 180px;
+  min-height: 140px;
   resize: vertical;
   line-height: 1.5;
 }
@@ -250,8 +247,35 @@ button {
   border-top: 1px solid rgba(160, 179, 210, 0.18);
 }
 
+.notes-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  gap: 12px;
+  padding: 0 10px 6px;
+  border-bottom: 1px solid rgba(160, 179, 210, 0.18);
+}
+
+.column-button {
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.column-button.is-active {
+  color: var(--text);
+}
+
 .note-item {
   width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  align-items: start;
+  gap: 12px;
   text-align: left;
   border-radius: 0;
   padding: 11px 10px;
@@ -266,17 +290,14 @@ button {
   border-bottom-color: rgba(47, 109, 246, 0.2);
 }
 
-.note-item-header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
 .note-item-title {
   font-size: 0.9rem;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: 500;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .note-item-tags,
@@ -284,6 +305,11 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.note-item-tags {
+  align-items: center;
+  min-width: 0;
 }
 
 .mini-tag,
@@ -317,6 +343,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 
 .editor-card {
@@ -378,6 +405,30 @@ button {
   cursor: pointer;
 }
 
+.pane-resizer {
+  position: relative;
+  width: 8px;
+  cursor: col-resize;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.pane-resizer::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 3px;
+  width: 2px;
+  border-radius: 999px;
+  background: rgba(134, 154, 193, 0.45);
+}
+
+.pane-resizer:hover::before,
+.pane-resizer.is-dragging::before {
+  background: rgba(47, 109, 246, 0.55);
+}
+
 .empty-state {
   padding: 14px;
   border-radius: 14px;
@@ -391,8 +442,12 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .pane-resizer {
+    display: none;
+  }
+
   .field textarea {
-    min-height: 280px;
+    height: 220px;
   }
 }
 
@@ -408,6 +463,11 @@ button {
   }
 
   .sidebar-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .note-item,
+  .notes-columns {
     grid-template-columns: 1fr;
   }
 

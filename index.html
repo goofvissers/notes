@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell" id="app-shell">
       <aside class="sidebar glass-panel">
         <div class="sidebar-top">
           <div class="brand-block">
@@ -27,10 +27,6 @@
           <div class="sidebar-actions">
             <button class="primary-button" id="new-note-button" type="button">
               New note
-            </button>
-
-            <button class="secondary-button utility-button" id="open-data-folder-button" type="button">
-              Open data folder
             </button>
           </div>
         </div>
@@ -52,8 +48,25 @@
           </button>
         </div>
 
+        <div class="notes-columns">
+          <button class="column-button" id="sort-title-button" type="button">
+            Title
+          </button>
+          <button class="column-button" id="sort-tag-button" type="button">
+            Tags
+          </button>
+        </div>
+
         <div class="notes-list" id="notes-list" aria-live="polite"></div>
       </aside>
+
+      <div
+        class="pane-resizer"
+        id="pane-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize library panel"
+      ></div>
 
       <main class="editor-area">
         <section class="editor-card glass-panel">
@@ -113,9 +126,7 @@
 
     <template id="note-item-template">
       <button class="note-item" type="button">
-        <div class="note-item-header">
-          <strong class="note-item-title"></strong>
-        </div>
+        <span class="note-item-title"></span>
         <div class="note-item-tags"></div>
       </button>
     </template>
